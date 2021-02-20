@@ -9,12 +9,19 @@ SPEEDFLY = -8
 BIRDIMG = pygame.image.load('img/bird.png')
 
 class Bird(GameObject):
-    # def __init__(self):
+    def __init__(self):
+        super().__init__(self, 
+                        h=BIRDHEIGHT, 
+                        w=BIRDWIDTH, 
+                        x=(WINDOWWIDTH - self.width)/2, 
+                        y=(WINDOWHEIGHT - self.height)/2,
+                        surface=BIRDIMG) 
+        self.speed = 0
+
     #     self.width = BIRDWIDTH
     #     self.height = BIRDHEIGHT
     #     self.x = (WINDOWWIDTH - self.width)/2
     #     self.y = (WINDOWHEIGHT- self.height)/2
-    #     self.speed = 0
     #     self.suface = BIRDIMG
 
     def draw(self):

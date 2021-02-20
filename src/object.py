@@ -9,14 +9,14 @@ class GameObject():
         h = None,
         x = None,
         y = None,
-        speed = None,
+        # speed = None,
         surface = None
     ): 
         self.width = w 
         self.height = h
         self.x = x  
         self.y = y  
-        self.speed = speed 
+        # self.speed = speed 
         self.suface = surface
 
     def update(self): 
