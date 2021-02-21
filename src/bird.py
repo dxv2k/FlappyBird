@@ -9,6 +9,12 @@ SPEEDFLY = -8
 BIRDIMG = pygame.image.load('img/bird.png')
 
 class Bird(GameObject):
+    BIRDWIDTH = 60 
+    BIRDHEIGHT = 45 
+    G = 0.5 # g-force  
+    SPEEDFLY = -8 
+    BIRDIMG = pygame.image.load('img/bird.png')
+
     def __init__(self):
         super().__init__(self, 
                         h=BIRDHEIGHT, 
