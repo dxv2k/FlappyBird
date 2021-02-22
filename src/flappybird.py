@@ -24,6 +24,8 @@ base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.
     objects move
 """
 
+pygame.display.set_caption('Flappy Bird')
+
 # TODO: using abstract GameObj for Bird,Pipe,Floor 
 class Object: 
     def __init__(self, x,y): 
@@ -240,6 +242,33 @@ class Floor:
         window.blit(self.IMG, (self.x1, self.y))
         window.blit(self.IMG, (self.x2, self.y))
 
+# class Score():
+#     def __init__(self):
+#         self.score = 0
+#         self.addScore = True
+    
+#     def draw(self,window):
+#         font = pygame.font.SysFont('consolas', 40)
+#         scoreSuface = font.render(str(self.score), True, (0, 0, 0))
+#         textSize = scoreSuface.get_size()
+#         # window.blit(scoreSuface, (int((WINDOWWIDTH - textSize[0])/2), 100))
+    
+#     def update(self, bird, columns):
+#         # collision = False
+#         # for i in range(3):
+#         #     rectColumn = [columns.ls[i][0] + columns.width, columns.ls[i][1], 1, columns.blank]
+#         #     rectBird = [bird.x, bird.y, bird.width, bird.height]
+#         #     if rectCollision(rectBird, rectColumn) == True:
+#         #         collision = True
+#         #         break
+#         # if collision == True:
+#         #     if self.addScore == True:
+#         #         self.score += 1
+#         #     self.addScore = False
+#         # else:
+#         #     self.addScore = True
+
+
 def blitRotateCenter(surf, image, topleft, angle):
     """
     Rotate a surface and blit it to the window
@@ -254,71 +283,42 @@ def blitRotateCenter(surf, image, topleft, angle):
 
     surf.blit(rotated_image, new_rect.topleft)
 
-# def draw_window(win, 
-#                 birds, 
-#                 pipes, 
-#                 base, 
-#                 score, 
-#                 gen, 
-#                 pipe_ind):
-#     """
-#     draws the windows for the main game loop
-#     :param win: pygame window surface
-#     :param bird: a Bird object
-#     :param pipes: List of pipes
-#     :param score: score of the game (int)
-#     :param gen: current generation
-#     :param pipe_ind: index of closest pipe
-#     :return: None
-#     """
-#     if gen == 0:
-#         gen = 1
-#     win.blit(bg_img, (0,0))
-
-#     for pipe in pipes:
-#         pipe.draw(win)
-
-#     base.draw(win)
-#     for bird in birds:
-#         # draw lines from bird to pipe
-#         if DRAW_LINES:
-#             try:
-#                 pygame.draw.line(win, (255,0,0), (bird.x+bird.img.get_width()/2, bird.y + bird.img.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_TOP.get_width()/2, pipes[pipe_ind].height), 5)
-#                 pygame.draw.line(win, (255,0,0), (bird.x+bird.img.get_width()/2, bird.y + bird.img.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_BOTTOM.get_width()/2, pipes[pipe_ind].bottom), 5)
-#             except:
-#                 pass
-#         # draw bird
-#         bird.draw(win)
-
-#     # score
-#     score_label = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
-#     win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
-
-#     # generations
-#     score_label = STAT_FONT.render("Gens: " + str(gen-1),1,(255,255,255))
-#     win.blit(score_label, (10, 10))
-
-#     # alive
-#     score_label = STAT_FONT.render("Alive: " + str(len(birds)),1,(255,255,255))
-#     win.blit(score_label, (10, 50))
-
-#     pygame.display.update()
-
 def draw_window(window,
                 bird,
-                pipe, 
+                pipes, 
                 floor): 
-    WINDOW.blit(bg_img,(0,0))
+    window.blit(bg_img,(0,0))
     bird.draw(window)
-    pipe.draw(window)
+    for pipe in pipes: 
+        pipe.draw(window)
     floor.draw(window)
     pygame.display.update()
 
+# # TODO: move gameloop from main to here 
+# def gameLoop(window, 
+#             bird, 
+#             pipe, 
+#             score
+# ): 
+#     while True: 
+
+# TODO: check if object is out of screen  
+def is_offscrn(obj, 
+                    window_width, 
+                    window_height): 
+    return False 
+
 def main(): 
+    clock = pygame.time.Clock()
+
+    # Game Object 
     bird = Bird(230,350) 
     floor = Floor(695)
-    clock = pygame.time.Clock()
-    pipe = PipePair(700)
+    # pipe = PipePair(700)
+    pipes = [PipePair(700)] 
+
+    score = 0  
+    # Main loop
     while True: 
         clock.tick(FPS)
         for event in pygame.event.get():
@@ -328,13 +328,33 @@ def main():
             if event.type == MOUSEBUTTONDOWN: 
                 bird.jump()
 
-        if pipe.isCollide(bird,WINDOW): 
-            print("[INFO] Bird collide with Pipe")
+        # respawn pipe and incr score  
+        remove_pipe = []
+        add_pipe = False  
+        for pipe in pipes: 
+            if pipe.isCollide(bird,WINDOW): 
+                print("[INFO] Bird collide with Pipe")
+                pass 
+            if pipe.x + pipe.IMG_TOP.get_width() < 0: 
+                remove_pipe.append(pipe) 
+
+            pipe.move() 
+
+            if not pipe.passed and pipe.x < bird.x: 
+                pipe.passed = True
+                add_pipe = True
+        if add_pipe: 
+            score += 1 
+            pipes.append(PipePair(700))
+        for pipe in remove_pipe: 
+            pipes.remove(pipe)
+        # if pipe.isCollide(bird,WINDOW): 
+        #     print("[INFO] Bird collide with Pipe")
 
         bird.move()
-        pipe.move()
+        # pipe.move()
         floor.move()
-        draw_window(WINDOW,bird,pipe,floor)
+        draw_window(WINDOW,bird,pipes,floor)
 
 if __name__ == '__main__':
     main()
