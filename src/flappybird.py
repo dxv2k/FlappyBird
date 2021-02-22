@@ -1,4 +1,5 @@
 import os 
+import math
 import random 
 import pygame
 from pygame.locals import *
@@ -140,16 +141,72 @@ class Bird:
         return pygame.mask.from_surface(self.img)
 
 class PipePair: 
-
+    GAP_SPACE = 200 # top and bottom space  
+    VELOCITY = 5 # velocity moving toward the bird 
     def __init__(self,x): 
         self.x = x 
+        self.height = 0   
 
+        # top pipe and bottom pipe 
+        self.top = 0 
+        self.bottom = 0 
 
+        # Image for PipePair  
+        self.IMG_TOP = pygame.transform.flip(pipe_img, False, True) 
+        self.IMG_BOTTOM = pipe_img
+
+        # Contain if the bird already pass this PipePair 
+        self.passed = False
+
+        # Random generate height for PipePair
+        self.set_height()
+
+    def set_height(self):
+        '''
+        Random generate height for PipePair
+        ''' 
+        self.height = random.randrange(50,450)        
+        self.top = self.height - self.IMG_TOP.get_height()
+        self.bottom = self.height + self.GAP_SPACE 
+
+    def move(self): 
+        self.x -= self.VELOCITY
+    
     def draw(self,window): 
-        window.blit()
+        # top pipe
+        window.blit(self.IMG_TOP, (self.x,self.top))
+        # bottom pipe
+        window.blit(self.IMG_BOTTOM, (self.x,self.bottom))
 
+    def get_mask(self): 
+        ''' 
+        return: [top pipe mask, bottom pipe mask]
+        ''' 
+        return [pygame.mask.from_surface(self.IMG_TOP), 
+                pygame.mask.from_surface(self.IMG_BOTTOM)]
+    
     def isCollide(self, bird, window): 
+        ''' 
+        param: bird object, window object 
+        return: True/False 
+        '''
+        bird_mask = bird.get_mask()
+        pipe_mask = self.get_mask() 
 
+        # calculate offset 
+        # explain: https://gamedev.stackexchange.com/questions/47694/meaning-of-offset-in-pygame-mask-overlap-methods 
+        top_offset = (self.x - bird.x, 
+                    self.top - round(bird.y))
+        bottom_offset = (self.x - bird.x, 
+                    self.bottom - round(bird.y))
+
+        # check if coliision 
+        top_collision = bird_mask.overlap(pipe_mask[0], 
+                                            top_offset) 
+        bottom_collision = bird_mask.overlap(pipe_mask[1], 
+                                            bottom_offset) 
+        if top_collision or bottom_collision: 
+            return True 
         return False
 
 class Floor: 
@@ -166,7 +223,7 @@ class Floor:
     def __init__(self,y): 
         self.y = y
         self.x1 = 0
-        self.x2 = 0
+        self.x2 = self.WIDTH
 
     def move(self): 
         self.x1 -= self.VELOCITY 
@@ -249,25 +306,35 @@ def blitRotateCenter(surf, image, topleft, angle):
 
 def draw_window(window,
                 bird,
+                pipe, 
                 floor): 
     WINDOW.blit(bg_img,(0,0))
     bird.draw(window)
+    pipe.draw(window)
     floor.draw(window)
     pygame.display.update()
 
 def main(): 
-    bird = Bird(200,200) 
+    bird = Bird(230,350) 
     floor = Floor(695)
     clock = pygame.time.Clock()
-
+    pipe = PipePair(700)
     while True: 
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == QUIT: 
                 pygame.quit()
                 sys.quit()
+            if event.type == MOUSEBUTTONDOWN: 
+                bird.jump()
+
+        if pipe.isCollide(bird,WINDOW): 
+            print("[INFO] Bird collide with Pipe")
+
         bird.move()
-        draw_window(WINDOW,bird,floor)
+        pipe.move()
+        floor.move()
+        draw_window(WINDOW,bird,pipe,floor)
 
 if __name__ == '__main__':
     main()
