@@ -13,6 +13,10 @@ WINDOW = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
 # FPS 
 FPS = 30
 
+# Font  
+pygame.font.init() # init font
+STAT_FONT = pygame.font.SysFont('comicsans', 80)
+
 # Load textures  
 pipe_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.png")).convert_alpha())
 bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (600, 900))
@@ -28,6 +32,7 @@ pygame.display.set_caption('Flappy Bird')
 
 # TODO: using abstract GameObj for Bird,Pipe,Floor 
 class Object: 
+    IMG = None 
     def __init__(self, x,y): 
         self.x = x
         self.y = y
@@ -112,7 +117,8 @@ class Bird:
         """
         self.img_count += 1
 
-        # TODO: Optimize this by implement State of the object 
+        # TODO: Optimize this by implement State Machine 
+        # ref: https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/from-user-input-to-animations-using-state-machines-r4155/
         # For animation of bird, loop through three images
         if self.img_count <= self.ANIMATION_TIME:
             self.img = self.IMGS[0]
@@ -286,12 +292,27 @@ def blitRotateCenter(surf, image, topleft, angle):
 def draw_window(window,
                 bird,
                 pipes, 
-                floor): 
+                floor, 
+                score): 
     window.blit(bg_img,(0,0))
+    # bird 
     bird.draw(window)
+
+    # pipes  
     for pipe in pipes: 
         pipe.draw(window)
+        
+    # floor 
     floor.draw(window)
+
+    # score 
+    scoreSuface = STAT_FONT.render(str(score), 
+                                    True, 
+                                    (255, 255, 255))
+    textSize = scoreSuface.get_size()
+    # window.blit(scoreSuface, (int((WINDOW_WIDTH - textSize[0])/2), 100))
+    window.blit(scoreSuface, (WINDOW_WIDTH - scoreSuface.get_width() - 15, 10))
+
     pygame.display.update()
 
 # # TODO: move gameloop from main to here 
@@ -302,20 +323,29 @@ def draw_window(window,
 # ): 
 #     while True: 
 
-# TODO: check if object is out of screen  
-def is_offscrn(obj, 
-                    window_width, 
-                    window_height): 
-    return False 
+# # TODO: check if object is out of screen  
+# def is_offscrn(obj, 
+#                 window_width, 
+#                 window_height): 
+#     ''' 
+#     Check whether object is off the screen
+#     param: 
+#     obj: object type which contains x,y coordinate 
+#     window_width: window width 
+#     window_height: window height 
+#     ''' 
+
+#     return False 
 
 def main(): 
+    # Game time 
     clock = pygame.time.Clock()
 
     # Game Object 
     bird = Bird(230,350) 
     floor = Floor(695)
     # pipe = PipePair(700)
-    pipes = [PipePair(700)] 
+    pipes = [PipePair(600)] 
 
     score = 0  
     # Main loop
@@ -335,6 +365,7 @@ def main():
             if pipe.isCollide(bird,WINDOW): 
                 print("[INFO] Bird collide with Pipe")
                 pass 
+            # check if pipe is off screen 
             if pipe.x + pipe.IMG_TOP.get_width() < 0: 
                 remove_pipe.append(pipe) 
 
@@ -345,16 +376,16 @@ def main():
                 add_pipe = True
         if add_pipe: 
             score += 1 
-            pipes.append(PipePair(700))
+            pipes.append(PipePair(600))
+            print('[INFO] Score: ',score)
         for pipe in remove_pipe: 
             pipes.remove(pipe)
         # if pipe.isCollide(bird,WINDOW): 
         #     print("[INFO] Bird collide with Pipe")
 
         bird.move()
-        # pipe.move()
         floor.move()
-        draw_window(WINDOW,bird,pipes,floor)
+        draw_window(WINDOW,bird,pipes,floor,score)
 
 if __name__ == '__main__':
     main()
