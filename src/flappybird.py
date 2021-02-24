@@ -33,11 +33,12 @@ pygame.display.set_caption('Flappy Bird')
 # TODO: using abstract GameObj for Bird,Pipe,Floor 
 class Object: 
     IMG = None 
+    ANIMATION_TIME = 0 
     def __init__(self, x,y): 
         self.x = x
         self.y = y
 
-    def update(self): 
+    def update(self,dt): 
         pass 
 
     def draw(self): 
@@ -308,7 +309,7 @@ def draw_window(window,
     # score 
     scoreSuface = STAT_FONT.render(str(score), 
                                     True, 
-                                    (255, 255, 255))
+                                    (255, 255, 255)) # color white 
     textSize = scoreSuface.get_size()
     # window.blit(scoreSuface, (int((WINDOW_WIDTH - textSize[0])/2), 100))
     window.blit(scoreSuface, (WINDOW_WIDTH - scoreSuface.get_width() - 15, 10))
@@ -323,20 +324,6 @@ def draw_window(window,
 # ): 
 #     while True: 
 
-# # TODO: check if object is out of screen  
-# def is_offscrn(obj, 
-#                 window_width, 
-#                 window_height): 
-#     ''' 
-#     Check whether object is off the screen
-#     param: 
-#     obj: object type which contains x,y coordinate 
-#     window_width: window width 
-#     window_height: window height 
-#     ''' 
-
-#     return False 
-
 def main(): 
     # Game time 
     clock = pygame.time.Clock()
@@ -349,8 +336,10 @@ def main():
 
     score = 0  
     # Main loop
+    # TODO: update() with dt   
     while True: 
         clock.tick(FPS)
+        # Event handler 
         for event in pygame.event.get():
             if event.type == QUIT: 
                 pygame.quit()
@@ -363,17 +352,18 @@ def main():
         add_pipe = False  
         for pipe in pipes: 
             if pipe.isCollide(bird,WINDOW): 
+                # TODO: terminate the bird if collided 
                 print("[INFO] Bird collide with Pipe")
                 pass 
             # check if pipe is off screen 
             if pipe.x + pipe.IMG_TOP.get_width() < 0: 
                 remove_pipe.append(pipe) 
-
-            pipe.move() 
-
+            # pipe.move() 
             if not pipe.passed and pipe.x < bird.x: 
                 pipe.passed = True
                 add_pipe = True
+            pipe.move() 
+
         if add_pipe: 
             score += 1 
             pipes.append(PipePair(600))
@@ -383,6 +373,7 @@ def main():
         # if pipe.isCollide(bird,WINDOW): 
         #     print("[INFO] Bird collide with Pipe")
 
+        # TODO: update GameObject with delta_time
         bird.move()
         floor.move()
         draw_window(WINDOW,bird,pipes,floor,score)
