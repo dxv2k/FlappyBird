@@ -418,6 +418,7 @@ def eval_genomes(genomes, config):
         # Event handler 
         for event in pygame.event.get():
             if event.type == QUIT: 
+                run = False 
                 pygame.quit()
                 sys.quit()
         # if multiple pipe appear, decide which one to feed to neural net 
@@ -435,7 +436,7 @@ def eval_genomes(genomes, config):
             output = neural_net[birds.index(bird)].activate((
                                 bird.y, # bird is not moving so given y-axis  
                                 abs(bird.y - pipes[pipe_ind].height), # distance to top pipe  
-                                abs(bird.y - pipes[pipe_ind].bottom)))  # distance to top pipe 
+                                abs(bird.y - pipes[pipe_ind].bottom)))  # distance to bottom pipe 
             if output[0] > 0.5: 
                 bird.jump() 
 
@@ -477,7 +478,9 @@ def eval_genomes(genomes, config):
         for bird in birds:
             # check if bird outside the screen 
             # if outside consider it as defective bird 
-            if bird.y + bird.img.get_height() - 10 >= FLOOR_POS or bird.y < -50:
+            if ((bird.y + bird.img.get_height() - 10 >= FLOOR_POS) or 
+                (bird.y < 0)):
+                # or (bird.y < -50):
                 neural_net.pop(birds.index(bird))
                 ge.pop(birds.index(bird))
                 birds.pop(birds.index(bird))

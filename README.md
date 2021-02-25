@@ -9,4 +9,4 @@ A small &amp; fun project with PyGame with NEAT implement as controller for AI
 
 # Bug: 
 * AI will may able to find bug in the game mechanic (jump high exceed the screen) 
- 
+* Or all birds die but the game still keep going  
