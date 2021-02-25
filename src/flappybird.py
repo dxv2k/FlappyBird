@@ -420,34 +420,67 @@ def eval_genomes(genomes, config):
             if event.type == QUIT: 
                 pygame.quit()
                 sys.quit()
+        # if multiple pipe appear, decide which one to feed to neural net 
+        pipe_ind = 0
+        if len(birds) > 0:
+            if ((len(pipes) > 1) 
+                and (birds[0].x > pipes[0].x + pipes[0].IMG_TOP.get_width())):  # determine whether to use the first or second
+                pipe_ind = 1                                                                 # pipe on the screen for neural network input
 
-        # respawn pipe and incr score  
+        # decide if bird should jump 
+        for idx, bird in enumerate(birds): 
+            ge[idx].fitness += 0.1 # reward for every survived frame 
+            bird.move()
+            # send bird location to neural net 
+            output = neural_net[birds.index(bird)].activate((
+                                bird.y, # bird is not moving so given y-axis  
+                                abs(bird.y - pipes[pipe_ind].height), # distance to top pipe  
+                                abs(bird.y - pipes[pipe_ind].bottom)))  # distance to top pipe 
+            if output[0] > 0.5: 
+                bird.jump() 
+
+        # update floor 
+        floor.move() 
+
+        # respawn pipe and collisiion detection  
         remove_pipe = []
         add_pipe = False  
         for pipe in pipes: 
             pipe.move() 
+            # check if any collision  
             for idx, bird in enumerate(birds): 
-                if pipe.isCollide(bird,WINDOW): 
-                    pass
+                # If bird collide with any pipe
+                # remove bird and its genome, neural from list 
+                if pipe.isCollide(bird,WINDOW):  
+                    ge[birds.index(bird)].fitness = -1
+                    neural_net.pop(birds.index(bird)) # eliminate bird from neural net  
+                    ge.pop(birds.index(bird)) # eliminate bird from genome  
+                    birds.pop(birds.index(bird)) # remove bird object   
                     
             # check if pipe is off screen 
             if pipe.x + pipe.IMG_TOP.get_width() < 0: 
                 remove_pipe.append(pipe) 
-            # pipe.move() 
             if not pipe.passed and pipe.x < bird.x: 
                 pipe.passed = True
                 add_pipe = True
 
-        if add_pipe: 
-            score += 1 
-            pipes.append(PipePair(600))
-            print('[INFO] Score: ',score)
+        if add_pipe:
+            score += 1
+            # encourage bird to jump through pipe by giving more reward than sual 
+            for genome in ge:
+                genome.fitness += 5
+            pipes.append(PipePair(PIPE_POS))
+
         for pipe in remove_pipe: 
             pipes.remove(pipe)
-        # if pipe.isCollide(bird,WINDOW): 
-        #     print("[INFO] Bird collide with Pipe")
 
-        # TODO: update GameObject with delta_time
+        for bird in birds:
+            # check if bird outside the screen 
+            # if outside consider it as defective bird 
+            if bird.y + bird.img.get_height() - 10 >= FLOOR_POS or bird.y < -50:
+                neural_net.pop(birds.index(bird))
+                ge.pop(birds.index(bird))
+                birds.pop(birds.index(bird))
 
         draw_window(WINDOW,birds,pipes,floor,score)
 
