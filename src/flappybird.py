@@ -4,11 +4,18 @@ import random
 import pygame
 from pygame.locals import *
 
+import neat 
+
 # Window settings
 WINDOW_HEIGHT = 800 
 WINDOW_WIDTH = 600 
-
 WINDOW = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
+
+# FLOOR
+FLOOR_POS = 730 
+
+# PIPE 
+PIPE_POS = 700 
 
 # FPS 
 FPS = 30
@@ -22,6 +29,10 @@ pipe_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.
 bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (600, 900))
 bird_images = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird" + str(x) + ".png"))) for x in range(1,4)]
 base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.png")).convert_alpha())
+
+# BIRD 
+BIRD_INIT_POS_X = 230
+BIRD_INIT_POS_Y = 350
 
 """
     In this game, the bird doesn't move but instead of that 
@@ -75,6 +86,7 @@ class Bird:
         self.img_count = 0
         self.img = self.IMGS[0]
 
+    # TODO: set threshold that bird can't go out window size  
     def jump(self):
         """
         make the bird jump
@@ -291,13 +303,14 @@ def blitRotateCenter(surf, image, topleft, angle):
     surf.blit(rotated_image, new_rect.topleft)
 
 def draw_window(window,
-                bird,
+                birds,
                 pipes, 
                 floor, 
                 score): 
     window.blit(bg_img,(0,0))
     # bird 
-    bird.draw(window)
+    for bird in birds: 
+        bird.draw(window)
 
     # pipes  
     for pipe in pipes: 
@@ -378,5 +391,99 @@ def main():
         floor.move()
         draw_window(WINDOW,bird,pipes,floor,score)
 
+def eval_genomes(genomes, config): 
+    # Game time 
+    clock = pygame.time.Clock()
+
+    # Game Object 
+    floor = Floor(FLOOR_POS)
+    pipes = [PipePair(PIPE_POS)] 
+    score = 0  
+
+    # Bird and its genome, neural nets management  
+    birds = [] # holding bird object  
+    neural_net = [] # holding neural net
+    ge = [] # genome object 
+
+    for gen_id, genome in genomes: 
+        genome.fitness = 0 # set fitness level
+        neural = neat.nn.FeedForwardNetwork.create(genome, config)
+        neural_net.append(neural)
+        birds.append(Bird(BIRD_INIT_POS_X,BIRD_INIT_POS_Y)) 
+        ge.append(genome)
+
+    run = True # flag
+    while True: 
+        clock.tick(FPS)
+        # Event handler 
+        for event in pygame.event.get():
+            if event.type == QUIT: 
+                pygame.quit()
+                sys.quit()
+
+        # respawn pipe and incr score  
+        remove_pipe = []
+        add_pipe = False  
+        for pipe in pipes: 
+            pipe.move() 
+            for idx, bird in enumerate(birds): 
+                if pipe.isCollide(bird,WINDOW): 
+                    pass
+                    
+            # check if pipe is off screen 
+            if pipe.x + pipe.IMG_TOP.get_width() < 0: 
+                remove_pipe.append(pipe) 
+            # pipe.move() 
+            if not pipe.passed and pipe.x < bird.x: 
+                pipe.passed = True
+                add_pipe = True
+
+        if add_pipe: 
+            score += 1 
+            pipes.append(PipePair(600))
+            print('[INFO] Score: ',score)
+        for pipe in remove_pipe: 
+            pipes.remove(pipe)
+        # if pipe.isCollide(bird,WINDOW): 
+        #     print("[INFO] Bird collide with Pipe")
+
+        # TODO: update GameObject with delta_time
+
+        draw_window(WINDOW,birds,pipes,floor,score)
+
+def run(config_file):
+    """
+    runs the NEAT algorithm to train a neural network to play flappy bird.
+    :param config_file: location of config file
+    :return: None
+    """
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_file)
+
+    # Create the population, which is the top-level object for a NEAT run.
+    population = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
+    #p.add_reporter(neat.Checkpointer(5))
+
+    # Run for up to 50 generations.
+    winner = population.run(eval_genomes, 50)
+
+    # show final stats
+    print('\nBest genome:\n{!s}'.format(winner))
+
+# if __name__ == '__main__':
+#     main()
+
 if __name__ == '__main__':
-    main()
+    # Determine path to configuration file. This path manipulation is
+    # here so that the script will run successfully regardless of the
+    # current working directory.
+    local_dir = os.path.dirname(__file__)
+    # config_path = os.path.join(local_dir, '../config/config-feedforward.txt')
+    config_path = os.path.join(local_dir, 'config-feedforward.txt')
+    run(config_path)

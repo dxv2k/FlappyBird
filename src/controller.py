@@ -12,6 +12,4 @@ def neat_controller(input):
     input which contains: bird.y, TOP_PIPE position, BOTTOM_PIPE position 
     output: jump or not 
     ''' 
-
-
     return False 
